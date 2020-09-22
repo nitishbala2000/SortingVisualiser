@@ -2,25 +2,7 @@ import React, { Component } from 'react';
 import Header from "./components/Header/Header";
 import SortingForm from './components/SortingForm/SortingForm';
 import Bars from "./components/Bars/Bars";
-
-const genRandomArray = (n) => {
-  const newArray = [];
-  for (let i = 0; i < n; i++) {
-    newArray.push(Math.round(Math.random() * 100));
-  }
-
-  return newArray;
-}
-
-const genArrayOfBlues = (n) => {
-  const newArray = [];
-  for (let i = 0; i < n; i++) {
-    newArray.push("#6399F1");
-  }
-
-  return newArray;
-}
-
+import StopSortingButton from "./components/StopSortingButton/StopSortingButton";
 
 
 
@@ -28,16 +10,19 @@ const genArrayOfBlues = (n) => {
 class App extends Component {
 
   state = {
-    algorithm: "bubble",
+    algorithm: "merge",
     array: [],
     colors: [],
-    sorting : false
+    sorting : false,
   }
 
   componentDidMount() {
     this.resetArray(10);
   }
 
+  stopSorting = () => {
+    this.setState({sorting: false});
+  }
   
 
 
@@ -54,11 +39,16 @@ class App extends Component {
 
 
   algorithmChanged = (event) => {
-    console.log(event.target.value);
+    this.setState({algorithm : event.target.value});
+    this.resetArray(this.state.array.length);
   }
 
 
   sortHelper = (i, swapsMade) => {
+
+    if (!this.state.sorting) {
+      return;
+    }
 
     setTimeout(() => {
       if (this.state.array[i] > this.state.array[i + 1]) {
@@ -79,11 +69,14 @@ class App extends Component {
       
 
         this.setState({ array: newArray,  colors : newColors}, () => {
+
+         
           if (i == this.state.array.length - 2) {
             this.sortHelper(0, false)
           } else {
             this.sortHelper(i + 1, true);
           }
+          
         });
          
       } else {
@@ -99,6 +92,8 @@ class App extends Component {
         }
 
         this.setState({colors : newColors}, () => {
+
+      
           if (i == this.state.array.length - 2) {
             if (!swapsMade) {
 
@@ -118,6 +113,7 @@ class App extends Component {
           } else {
             this.sortHelper(i + 1, swapsMade);
           }
+
         });
 
       }
@@ -127,20 +123,34 @@ class App extends Component {
   }
 
   sort = () => {
-    this.setState({sorting: true});
-    this.sortHelper(0, false);
-  
+
+    switch (this.state.algorithm) {
+      case "bubble" : {
+        this.setState({sorting: true}, () => this.sortHelper(0, false));
+        break;
+      } case "merge" : {
+        break;
+      } case "quick" : {
+        break;
+      } case "heap" : {
+        break;
+      }
+    }
+   
   }
 
 
 
   render() {
+
+    
     return (
       <div className="App">
 
         <Header />
         <SortingForm
           arrayLen={this.state.array.length}
+          algorithm={this.state.algorithm}
           changeArrayLen={(event) => this.resetArray(event.target.value)}
           algorithmChanged={this.algorithmChanged}
           regenArray={() => this.resetArray(this.state.array.length)}
@@ -149,7 +159,7 @@ class App extends Component {
 
         <Bars array={this.state.array} colors={this.state.colors}></Bars>
 
-
+        {this.state.sorting ? <StopSortingButton stopSorting={this.stopSorting}/> : null}
 
       </div>
     )

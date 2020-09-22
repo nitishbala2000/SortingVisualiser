@@ -9,7 +9,7 @@ const Bars = (props) => {
         bars.push(
             <div style={{
                 height: n * 4 + "px",
-                width: "10px",
+                width: "50px",
                 marginRight: "5px",
                 backgroundColor: props.colors[i]
             }}/>
