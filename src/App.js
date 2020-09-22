@@ -3,7 +3,7 @@ import Header from "./components/Header/Header";
 import SortingForm from './components/SortingForm/SortingForm';
 import Bars from "./components/Bars/Bars";
 import StopSortingButton from "./components/StopSortingButton/StopSortingButton";
-import { merge, flatten } from "./helper_functions";
+import { merge, flatten, swap } from "./helper_functions";
 
 const colors = {
   BLUE: "#6399F1",
@@ -31,7 +31,12 @@ class App extends Component {
 
   stopSorting = () => {
     clearInterval(this.state.sortingIntervalVar);
-    this.setState({ sorting: false });
+    const newColors = [];
+    for (let n in this.state.array) {
+      newColors.push(colors.PURPLE);
+    }
+
+    this.setState({ sorting: false, colors: newColors });
   }
 
 
@@ -61,11 +66,8 @@ class App extends Component {
 
     let intervalVar = setInterval(() => {
       if (this.state.array[i] > this.state.array[i + 1]) {
-        let newArray = [...this.state.array];
-        let temp = newArray[i];
-        newArray[i] = newArray[i + 1];
-        newArray[i + 1] = temp;
 
+        let newArray = swap(this.state.array, i, i + 1);
 
         let newColors = [];
         for (let j in this.state.array) {
@@ -108,20 +110,13 @@ class App extends Component {
           if (i == this.state.array.length - 2) {
             if (!swapsMade) {
 
-
-              //Loop finished
-              let newColors = [];
-              for (let j in this.state.array) {
-                newColors[j] = colors.PURPLE;
-              }
-
-              clearInterval(intervalVar);
-              this.setState({ colors: newColors, sorting: false });
+              this.stopSorting();
 
             } else {
               i = 0;
               swapsMade = false;
             }
+
           } else {
             i++;
           }
@@ -150,17 +145,11 @@ class App extends Component {
 
     let intervalVar = setInterval(() => {
       if (arraysToMerge.length == 1) {
-
         //Sorting finished
-        const newColors = [...this.state.colors];
+        this.setState({ array: arraysToMerge[0] }, this.stopSorting);
 
-        for (let j in this.state.array) {
-          newColors[j] = colors.PURPLE;
-        }
-
-        this.setState({ array: arraysToMerge[0], sorting: false, colors: newColors });
-        clearInterval(intervalVar);
       } else {
+
         let arr1, arr2;
         [arr1, arr2] = arraysToMerge.splice(i, 2);
 
@@ -209,12 +198,11 @@ class App extends Component {
     let incrementJ = () => {
       j++;
       if (j == high) {
-        let arrCopy = [...this.state.array];
-        let temp = arrCopy[i + 1];
-        arrCopy[i + 1] = arrCopy[high];
-        arrCopy[high] = temp;
+
+        let arrCopy = swap(this.state.array, i + 1, high);
 
         const newColors = [];
+
         for (let n in this.state.colors) {
           if (n == i + 1 || n == high) {
             newColors.push(colors.GREEN);
@@ -222,50 +210,45 @@ class App extends Component {
             newColors.push(colors.BLUE);
           }
         }
+
         this.setState({ array: arrCopy, colors: newColors }, () => {
           //This iteration of partition has finished
           clearInterval(intervalVar);
           callback(i + 1);
         })
       }
+
     };
+
+    const getNewColors = (pivotColor, ijColor) => {
+      const newColors = [];
+      for (let n in this.state.array) {
+        if (n == high) {
+          newColors.push(pivotColor);
+        } else if (n == i || n == j) {
+          newColors.push(ijColor);
+        } else {
+          newColors.push(colors.BLUE);
+        }
+      }
+
+      return newColors;
+    }
 
     intervalVar = setInterval(() => {
       if (this.state.array[j] <= pivot) {
         i++;
 
-        let arrCopy = [...this.state.array];
-        let temp = arrCopy[i];
-        arrCopy[i] = arrCopy[j];
-        arrCopy[j] = temp;
-
-        const newColors = [];
-        for (let n in this.state.array) {
-          if (n == high) {
-            newColors.push(colors.YELLOW);
-          } else if (n == i || n == j) {
-            newColors.push(colors.RED);
-          } else {
-            newColors.push(colors.BLUE);
-          }
-        }
-
+        let arrCopy = swap(this.state.array, i, j);
+        const newColors = getNewColors(colors.YELLOW, colors.RED);
 
         this.setState({ array: arrCopy, colors: newColors }, () => {
           incrementJ();
         });
-      } else {
-        const newColors = [];
-        for (let n in this.state.array) {
-          if (n == high) {
-            newColors.push(colors.YELLOW);
-          } else if (n == i || n == j) {
-            newColors.push(colors.GREEN);
-          } else {
-            newColors.push(colors.BLUE);
-          }
-        }
 
+      } else {
+
+        const newColors = getNewColors(colors.YELLOW, colors.GREEN);
 
         this.setState({ colors: newColors }, () => {
           incrementJ();
@@ -274,6 +257,7 @@ class App extends Component {
     }, 100);
 
     this.setState({ sortingIntervalVar: intervalVar });
+    
   }
 
   quickSortHelper = (low, high, callback) => {
@@ -281,39 +265,129 @@ class App extends Component {
       this.partition(low, high, (splitpoint) => {
         this.quickSortHelper(low, splitpoint - 1, () => {
           this.quickSortHelper(splitpoint + 1, high, () => {
-            if (callback) {
-              callback();
-            }
+            callback();
           });
         });
 
       })
     } else {
-      if (callback) {
-        callback();
-      }
+      callback();
     }
 
   }
 
-
   quickSort = () => {
-    this.quickSortHelper(0, this.state.array.length - 1, () => {
-      const newColors = [];
-      for (let n in this.state.array) {
-        newColors.push(colors.PURPLE);
-      }
-      this.setState({ sorting: false, colors: newColors });
-    });
+    this.quickSortHelper(0, this.state.array.length - 1, this.stopSorting);
   }
 
+
+  heapify = (n, i, callback) => {
+    if (!this.state.sorting) {
+      return;
+    }
+
+    setTimeout(() => {
+      let largest = i;
+
+      let l = 2 * i + 1;
+      let r = 2 * i + 2;
+
+      if (l < n && this.state.array[i] < this.state.array[l]) {
+        largest = l;
+      }
+
+
+      if (r < n && this.state.array[largest] < this.state.array[r]) {
+        largest = r;
+      }
+
+      if (largest != i) {
+        let arrCopy = [...this.state.array];
+        let temp = arrCopy[i];
+        arrCopy[i] = arrCopy[largest];
+        arrCopy[largest] = temp;
+
+        let newColors = [];
+        for (let j in this.state.colors) {
+          if (j == i) {
+            newColors.push(colors.YELLOW);
+          } else if (j == largest) {
+            newColors.push(colors.GREEN);
+          } else {
+            newColors.push(colors.BLUE);
+          }
+        }
+
+        this.setState({ array: arrCopy, colors: newColors }, () => {
+          this.heapify(n, largest, callback);
+        });
+
+      } else {
+
+
+        if (callback) {
+          callback();
+        }
+      }
+
+    }, 100);
+  }
+
+  heapSortHeapifyLoop = (i, callback) => {
+    const n = this.state.array.length;
+    this.heapify(n, i, () => {
+      if (i == 0) {
+        callback();
+      } else {
+        this.heapSortHeapifyLoop(i - 1, callback);
+      }
+    })
+
+  }
+
+  heapSortMainLoop = (i, callback) => {
+
+    const newArr = [...this.state.array];
+    let temp = newArr[i];
+    newArr[i] = newArr[0];
+    newArr[0] = temp;
+
+
+    const newColors = [];
+    for (let j in this.state.colors) {
+      if (j == i || j == 0) {
+        newColors.push(colors.RED);
+      } else {
+        newColors.push(colors.BLUE);
+      }
+    }
+    this.setState({ array: newArr, colors: newColors }, () => {
+      this.heapify(i, 0, () => {
+        if (i > 1) {
+          this.heapSortMainLoop(i - 1, callback);
+        } else {
+          callback();
+        }
+      })
+    })
+
+
+  }
+
+  heapSort = () => {
+    const n = this.state.array.length;
+    const iInitial = Math.floor(n / 2) - 1;
+
+    this.heapSortHeapifyLoop(iInitial, () => {
+      this.heapSortMainLoop(n - 1, this.stopSorting);
+    });
+  }
 
   sort = () => {
 
     switch (this.state.algorithm) {
       case "bubble": {
         this.setState({ sorting: true }, () => this.bubbleSort());
-
         break;
       } case "merge": {
         this.setState({ sorting: true }, () => this.mergeSort());
@@ -322,6 +396,7 @@ class App extends Component {
         this.setState({ sorting: true }, () => this.quickSort());
         break;
       } case "heap": {
+        this.setState({ sorting: true }, () => this.heapSort());
         break;
       }
     }

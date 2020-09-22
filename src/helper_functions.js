@@ -29,3 +29,11 @@ export const flatten = (arr) => {
 
     return output;
 }
+
+export const swap = (arr, i, j) => {
+    const newArr = [...arr];
+    let temp = newArr[i];
+    newArr[i] = newArr[j];
+    newArr[j] = temp;
+    return newArr;
+}
