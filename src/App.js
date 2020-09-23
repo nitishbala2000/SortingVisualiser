@@ -302,10 +302,7 @@ class App extends Component {
       }
 
       if (largest != i) {
-        let arrCopy = [...this.state.array];
-        let temp = arrCopy[i];
-        arrCopy[i] = arrCopy[largest];
-        arrCopy[largest] = temp;
+        const arrCopy = swap(this.state.array, largest, i);
 
         let newColors = [];
         for (let j in this.state.colors) {
@@ -347,11 +344,7 @@ class App extends Component {
 
   heapSortMainLoop = (i, callback) => {
 
-    const newArr = [...this.state.array];
-    let temp = newArr[i];
-    newArr[i] = newArr[0];
-    newArr[0] = temp;
-
+    const newArr = swap(this.state.array, i, 0);
 
     const newColors = [];
     for (let j in this.state.colors) {
